@@ -1,0 +1,37 @@
+<div class="container">
+
+    <h1 class="text-center">Error {{ @ERROR.code }}</h1>
+
+    <div class="text-center mt-5">
+        <check if="{{ @ERROR.code === 404 }}">
+            <true>
+                <p>
+                    Looks like you've lost
+                </p>
+                <p>
+                    Return to the home page
+                    <a href="{{ BASE_URL }}">{{ BASE_URL }}</a>
+                </p>
+            </true>
+
+            <false>
+                <p>
+                    Something goes wrong
+                </p>
+                <p>
+                    Please contact webiste administrator
+                </p>
+            </false>
+        </check>
+    </div>
+
+</div>
+
+<check if="{{ @APP.ENV === 'local' && @ERROR.code !== 404 }}">
+    <p>
+        {{ @ERROR.text }}
+    </p>
+    <pre>
+{{ @ERROR.trace }}
+    </pre>
+</check>

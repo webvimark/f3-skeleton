@@ -1,0 +1,19 @@
+<div class="container">
+    <h1 class="text-center">Example view</h1>
+
+    <check if="{{ @flash }}">
+        <div class="alert alert-success">{{ @flash }}</div>
+        <div class="alert alert-info">Now you can refresh page and this message will disappear</div>
+    </check>
+
+    <div class="text-center jumbotron">
+        <p>
+            <b>Some random text</b>
+        </p>
+        {{ @randomText }}
+    </div>
+
+    <div class="text-center mt-5">
+        <a href="{{ 'example_form' | alias }}">View form</a>
+    </div>
+</div>

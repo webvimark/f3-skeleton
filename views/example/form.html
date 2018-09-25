@@ -1,0 +1,25 @@
+<div class="container">
+    <h1 class="text-center">Example form without header</h1>
+
+    <check if="{{ @errors }}">
+        <div class="alert alert-danger">
+            <repeat group="{{ @errors }}" value="{{ @error }}">
+                <p>{{ @error }}</p>
+            </repeat>
+        </div>
+
+    </check>
+
+    <form action="{{ 'example_form' | alias }}" method="post">
+        <input type="hidden" name="csrf" value="{{ @csrf }}" />
+        <div class="form-group">
+            <label for="url">Enter non-valid url</label>
+            <input type="text" class="form-control" id="url" name="url" value="{{ @POST.url }}">
+        </div>
+        <input type="submit" class="btn btn-primary" value="Submit form">
+    </form>
+
+    <div class="text-center mt-5">
+        <a href="{{ BASE_URL }}">Go to the home url</a>
+    </div>
+</div>

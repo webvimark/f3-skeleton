@@ -1,0 +1,13 @@
+{
+    "name": "your-name/project-name",
+    "description": "Project description",
+    "type": "project",
+    "minimum-stability": "stable",
+    "autoload": {
+        "psr-4": {"App\\": "App/"}
+    },
+    "require": {
+        "bcosca/fatfree": "^3.6",
+        "usmanhalalit/pixie": "^2.0"
+    }
+}
