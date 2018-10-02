@@ -40,7 +40,7 @@ class AssetsHandler
         $fileName = md5(implode(',', $result)) . '.' . $type;
         $file = WEB_DIR . '/combine/' . $fileName;
 
-        if (!is_file($file) || filemtime($file) !== $mtime) {
+        if ((!is_file($file) || filemtime($file) !== $mtime) && php_sapi_name() !== 'cli') {
             file_put_contents($file, \Web::instance()->minify($result, null, false, WEB_DIR . '/'));
             chmod($file, 0777);
             touch($file, $mtime);
