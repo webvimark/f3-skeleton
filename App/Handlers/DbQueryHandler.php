@@ -41,6 +41,12 @@ class DbQueryHandler extends \Pixie\QueryBuilder\QueryBuilderHandler
     protected $mapFunction;
 
     /**
+     * @see $this->withMany() and $this->withManyVia()
+     * @var array
+     */
+    protected $withs = [];
+
+    /**
      * Cache time in seconds. 0 - no cache
      *
      * @param integer $ttl
@@ -66,6 +72,75 @@ class DbQueryHandler extends \Pixie\QueryBuilder\QueryBuilderHandler
     public function map(\Closure $mapFunction)
     {
         $this->mapFunction = $mapFunction;
+        return $this;
+    }
+
+    /**
+     * Add related data from "external_table"
+     *
+     * @param string $external_table
+     * @param string $external_table_id
+     * @param string $original_table_id
+     * @param string $name
+     * @return $this
+     */
+    public function withMany($external_table, $external_table_id, $original_table_id = 'id', $name = null)
+    {
+        if ($name === null) {
+            $name = $external_table;
+        }
+
+        $this->withs[$name] = array_merge(
+            ['type' => __FUNCTION__],
+            compact(
+                'name',
+                'external_table',
+                'external_table_id',
+                'original_table_id'
+            )
+        );
+
+        return $this;
+    }
+
+    /**
+     * Add related data from "external_table" connnected from "via_table"
+     *
+     * @param string $external_table
+     * @param string $via_table
+     * @param string $via_table_original_id
+     * @param string $via_table_external_id
+     * @param string $external_table_id
+     * @param string $original_table_id
+     * @param string $name
+     * @return $this
+     */
+    public function withManyVia(
+        $external_table,
+        $via_table,
+        $via_table_original_id,
+        $via_table_external_id,
+        $external_table_id = 'id',
+        $original_table_id = 'id',
+        $name = null
+    ) {
+        if ($name === null) {
+            $name = $external_table;
+        }
+
+        $this->withs[$name] = array_merge(
+            ['type' => __FUNCTION__],
+            compact(
+                'name',
+                'external_table',
+                'via_table',
+                'via_table_original_id',
+                'via_table_external_id',
+                'external_table_id',
+                'original_table_id'
+            )
+        );
+
         return $this;
     }
 
@@ -121,10 +196,9 @@ class DbQueryHandler extends \Pixie\QueryBuilder\QueryBuilderHandler
      */
     public function getColumn()
     {
-        $this->setFetchMode(\PDO::FETCH_COLUMN);
-        return $this->get();
+        return $this->setFetchMode(\PDO::FETCH_COLUMN)->get();
     }
- 
+
     /**
      * Get scalar value from the first selected column first found row
      *
@@ -132,8 +206,7 @@ class DbQueryHandler extends \Pixie\QueryBuilder\QueryBuilderHandler
      */
     public function getScalar()
     {
-        $this->setFetchMode(\PDO::FETCH_COLUMN);
-        return $this->first();
+        return $this->setFetchMode(\PDO::FETCH_COLUMN)->first();
     }
 
     /**
@@ -152,14 +225,61 @@ class DbQueryHandler extends \Pixie\QueryBuilder\QueryBuilderHandler
             $cacheKey = $this->cacheKey ? : sha1($this->getQuery()->getRawSql());
 
             if (!\Cache::instance()->exists($cacheKey, $result)) {
-                $result = $this->mapResults(parent::get());
+                $result = $this->mapResults($this->performWith(parent::get()));
 
                 \Cache::instance()->set($cacheKey, $result, $this->cacheTtl);
             }
 
             return $result;
         }
-        return $this->mapResults(parent::get());
+        return $this->mapResults($this->performWith(parent::get()));
+    }
+
+    /**
+     * Iterate over "withs" and add related datasets to the result
+     *
+     * @param array|null $result
+     * @return array|null
+     */
+    protected function performWith($result)
+    {
+        if (!$result || !$this->withs) {
+            return $result;
+        }
+
+        $qb = new static($this->getConnection());
+
+        foreach ($this->withs as $name => $params) {
+            if ($params['type'] === 'withManyVia') {
+                $with = $qb->table($params['external_table'])
+                    ->select($params['external_table'] . '.*')
+                    ->select([$params['via_table'] . '.' . $params['via_table_original_id'] => '___placeholder'])
+                    ->innerJoin($params['via_table'], $params['via_table'] . '.' . $params['via_table_external_id'], '=', $params['external_table'] . '.' . $params['external_table_id'])
+                    ->whereIn($params['via_table'] . '.' . $params['via_table_original_id'], array_column($result, $params['original_table_id']))
+                    ->get();
+
+            } elseif ($params['type'] === 'withMany') {
+                $with = $qb->table($params['external_table'])
+                    ->select($params['external_table'] . '.*')
+                    ->select([$params['external_table'] . '.' . $params['external_table_id'] => '___placeholder'])
+                    ->whereIn($params['external_table'] . '.' . $params['external_table_id'], array_column($result, $params['original_table_id']))
+                    ->get();
+            }
+
+            foreach ($result as &$item) {
+                $item[$params['name']] = [];
+                foreach ($with as $val) {
+                    if ($item[$params['original_table_id']] == $val['___placeholder']) {
+                        unset($val['___placeholder']);
+                        $item[$params['name']][] = $val;
+                    }
+                }
+            }
+
+            $with = null;
+        }
+
+        return $result;
     }
 
     /**
