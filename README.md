@@ -39,6 +39,7 @@ Create "configs/env.ini" or copy from "_env.local.example.ini" or "_env.producti
 
 ```
 chmod 777 tmp
+chmod 777 www/combine
 composer install
 composer dump -o
 ```

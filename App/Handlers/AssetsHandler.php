@@ -16,9 +16,6 @@ class AssetsHandler
      * Example with injection (e.g. set "v.js" variable and use it like this):
      *      <script src="{{ combine('js/query.js', @v.js, 'js/some-lib/main.js') }}"></script>
      *
-     * Your routes.ini file should have following route
-     *      GET /combine/@hash.@type = App\Handlers\AssetsHandler::combineRoute, 3600 
-     *
      * @param array $files
      * @return string
      */
@@ -26,7 +23,7 @@ class AssetsHandler
     {
         $result = [];
         $mtime = static::cleanFiles($files, $result);
-       
+
         if (!$result) {
             return '';
         }
@@ -40,10 +37,16 @@ class AssetsHandler
             return 'You can pass only CSS and JS files to combine() function';
         }
 
-        $result[] = $mtime;
-        $result[] = md5(\Base::instance()->SEED . implode(',', $result));
+        $fileName = md5(implode(',', $result)) . '.' . $type;
+        $file = WEB_DIR . '/combine/' . $fileName;
 
-        return BASE_URL . '/combine/' . urlencode(base64_encode(implode(',', $result))) . '.' . $type;
+        if (!is_file($file) || filemtime($file) !== $mtime) {
+            file_put_contents($file, \Web::instance()->minify($result, null, false, WEB_DIR . '/'));
+            chmod($file, 0777);
+            touch($file, $mtime);
+        }
+
+        return BASE_URL . '/combine/' . $fileName . '?t=' . $mtime;
     }
 
     /**
@@ -83,31 +86,5 @@ class AssetsHandler
         }
 
         return $mtime;
-    }
-
-    /**
-     * Route for getCombineLink()
-     * Hash check used to prevent cache overflow (route caching create new chache when any param is changed)
-     * 
-     * Your routes.ini file should have following route
-     *      GET /combine/@hash.@type = App\Handlers\AssetsHandler::combineRoute, 3600 
-     *
-     * @param \Base $fw
-     */
-    public static function combineRoute(\Base $fw)
-    {
-        $files = explode(',', urldecode(base64_decode($fw->{'PARAMS.hash'})));
-        $hash = array_pop($files);
-
-        if (md5($fw->SEED . implode(',', $files)) !== $hash) {
-            $fw->error(404);
-        }
-        array_pop($files); // remove mtime
-
-        if (!$files) {
-            $fw->error(404);
-        }
-
-        echo \Web::instance()->minify($files, null, true, WEB_DIR . '/');
     }
 }
