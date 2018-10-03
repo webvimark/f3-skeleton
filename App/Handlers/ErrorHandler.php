@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Handlers;
 
 use Base;
@@ -23,6 +24,11 @@ class ErrorHandler
 
         if (php_sapi_name() === 'cli') {
             dd($fw->get('ERROR'));
+        } elseif ($fw->ajax()) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'error' => $fw->{'ERROR.text'},
+            ]);
         } else {
             echo view('error.html');
         }
