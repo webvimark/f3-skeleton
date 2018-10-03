@@ -1,5 +1,6 @@
 <?php
 namespace App\Handlers;
+use Exception;
 
 class AssetsHandler
 {
@@ -22,7 +23,11 @@ class AssetsHandler
     public static function getCombineLink($files)
     {
         $result = [];
-        $mtime = static::cleanFiles($files, $result);
+        try {
+            $mtime = static::cleanFiles($files, $result);
+        } catch (Exception $e) {
+            return 'Missing file - ' . $e->getMessage();
+        }
 
         if (!$result) {
             return '';
@@ -54,13 +59,14 @@ class AssetsHandler
      *
      * @param array $files
      * @param array $result
+     * @throws Exception
      * @return int
      */
     protected static function cleanFiles(array $files, &$result)
     {
         $mtime = 0;
         
-        // Remove non-existent files and get biggest file modification time
+        // Check that files exists and get biggest file modification time
         foreach ($files as $fileName) {
             if (is_array($fileName)) {
                 $mt = static::cleanFiles($fileName, $result);
@@ -75,11 +81,12 @@ class AssetsHandler
                     $fileName = preg_replace('/\.\./', '', trim($fileName));
                     $file = WEB_DIR . '/' . $fileName;
 
-                    if (is_file($file)) {
-                        $result[$fileName] = $fileName;
-                        if (filemtime($file) > $mtime) {
-                            $mtime = filemtime($file);
-                        }
+                    if (!is_file($file)) {
+                        throw new Exception($fileName);
+                    }
+                    $result[$fileName] = $fileName;
+                    if (filemtime($file) > $mtime) {
+                        $mtime = filemtime($file);
                     }
                 }
             }
