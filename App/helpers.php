@@ -5,11 +5,11 @@
  * 
  * db($tables) is equal to db()->table($tables)
  * 
- * https://github.com/usmanhalalit/pixie
+ * https://github.com/webvimark/pixie
  * 
  * @param string|array|null $tables
  * 
- * @return \App\Handlers\DbQueryHandler
+ * @return \Pixie\QueryBuilder\QueryBuilderHandler
  */
 function db($tables = null)
 {
@@ -17,7 +17,8 @@ function db($tables = null)
 
     if (!$fw->exists('_HELPERS.qb', $qb)) {
         $connection = new \Pixie\Connection($fw->get('DB.config.driver'), $fw->get('DB.config'));
-        $qb = new \App\Handlers\DbQueryHandler($connection);
+        $qb = new \Pixie\QueryBuilder\QueryBuilderHandler($connection);
+        $qb->setCacheHandler(\Cache::instance());
         $fw->set('_HELPERS.qb', $qb);
     }
 

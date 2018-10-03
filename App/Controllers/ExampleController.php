@@ -64,7 +64,7 @@ class ExampleController
     /**
      * Working with database - db() function
      * 
-     * https://github.com/usmanhalalit/pixie
+     * https://github.com/webvimark/pixie
      *
      * @param Base $fw
      */

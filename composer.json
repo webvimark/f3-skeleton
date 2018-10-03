@@ -8,6 +8,6 @@
     },
     "require": {
         "bcosca/fatfree": "^3.6",
-        "usmanhalalit/pixie": "^2.0"
+        "webvimark/pixie": "^2.0"
     }
 }
